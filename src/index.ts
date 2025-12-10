@@ -6,8 +6,11 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   Tool,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { TodoistApi } from "@doist/todoist-api-typescript";
+import { PROMPTS } from "./prompts/index.js";
 
 // Define tools
 const CREATE_TASK_TOOL: Tool = {
@@ -219,6 +222,27 @@ function isCompleteTaskArgs(args: unknown): args is {
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL, COMPLETE_TASK_TOOL],
 }));
+
+// Prompt handlers
+server.setRequestHandler(ListPromptsRequestSchema, async () => ({
+  prompts: Object.values(PROMPTS).map(({ name, description }) => ({
+    name,
+    description,
+  })),
+}));
+
+server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+  const { name } = request.params;
+  const prompt = PROMPTS[name];
+
+  if (!prompt) {
+    throw new Error(`Prompt not found: ${name}`);
+  }
+
+  return {
+    messages: prompt.messages,
+  };
+});
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
